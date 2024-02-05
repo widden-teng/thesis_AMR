@@ -1,0 +1,6 @@
+<launch>
+<!-- output="screen" -->
+   <node pkg="test_pkg" type="top_camera_handpose_gesture_mix_demo.py" name="top_camera_handpose_gesture_mix_demo"/>
+   <node pkg="test_pkg" type="side_camera_handpose_gesture_demo.py" name="side_camera_handpose_gesture_demo"/>
+   <node name="rviz_hand" pkg="rviz" type="rviz" args="-d $(find test_pkg)/rviz/handpose_gesture_new.rviz" />  
+</launch>
