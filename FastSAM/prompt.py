@@ -97,7 +97,7 @@ class FastSAMPrompt:
     def plot_to_result(self,
              annotations,
              depth,
-             depth_mask,
+             depth_useless_mask,
              bboxes=None,
              points=None,
              point_label=None,
@@ -160,7 +160,7 @@ class FastSAMPrompt:
             self.fast_show_mask_gpu(
                 annotations,
                 depth,
-                depth_mask,
+                depth_useless_mask,
                 plt.gca(),
                 random_color=mask_random_color,
                 bboxes=bboxes,
@@ -227,7 +227,7 @@ class FastSAMPrompt:
              annotations,
              output_path,
              depth,
-             depth_mask,
+             depth_useless_mask,
              bboxes=None,
              points=None,
              point_label=None,
@@ -240,7 +240,7 @@ class FastSAMPrompt:
         result = self.plot_to_result(
             annotations,
             depth, 
-            depth_mask,
+            depth_useless_mask,
             bboxes, 
             points, 
             point_label, 
@@ -254,17 +254,13 @@ class FastSAMPrompt:
         if not os.path.exists(path):
             os.makedirs(path)
         result = result[:, :, ::-1]
-        
-        
-        # # 自己+的(這邊會顯示最終的結果)
+          
+        ### 可以顯示最終的結果
         # cv2.imshow('final_mask', result)
         # cv2.waitKey(3)
 
-
-
-        # 原本就有
-        # output_path 為 "./output/dogs.jpg"
-        cv2.imwrite(output_path, result)
+        ###儲存結果 目前 output_path 為 "./output/output_img.jpg"
+        # cv2.imwrite(output_path, result)
 
         return(result)
 
@@ -283,7 +279,7 @@ class FastSAMPrompt:
         target_height=960,
         target_width=960,
     ):
-        msak_sum = annotation.shape[0]
+        mask_sum = annotation.shape[0]
         height = annotation.shape[1]
         weight = annotation.shape[2]
         #Sort annotations based on area.
@@ -293,10 +289,10 @@ class FastSAMPrompt:
 
         index = (annotation != 0).argmax(axis=0)
         if random_color:
-            color = np.random.random((msak_sum, 1, 1, 3))
+            color = np.random.random((mask_sum, 1, 1, 3))
         else:
-            color = np.ones((msak_sum, 1, 1, 3)) * np.array([30 / 255, 144 / 255, 255 / 255])
-        transparency = np.ones((msak_sum, 1, 1, 1)) * 0.6
+            color = np.ones((mask_sum, 1, 1, 3)) * np.array([30 / 255, 144 / 255, 255 / 255])
+        transparency = np.ones((mask_sum, 1, 1, 1)) * 0.6
         visual = np.concatenate([color, transparency], axis=-1)
         mask_image = np.expand_dims(annotation, -1) * visual
 
@@ -333,7 +329,7 @@ class FastSAMPrompt:
         self,
         annotation,
         depth,
-        depth_mask,
+        depth_useless_mask,
         ax,
         random_color=False,
         bboxes=None,
@@ -345,7 +341,7 @@ class FastSAMPrompt:
     ):
         
         ################# 選擇需要的mask ##############################
-        ################ 先利用depth 篩選 mask ##################
+        ###### 先利用depth 篩選 mask(利用去極值的中位數創建對應的 mask) ######
         # print("-----------------")
         # print("the depth is : ", depth[148, 444])
         # print("the depth is : ", depth[444, 148])
@@ -353,14 +349,11 @@ class FastSAMPrompt:
         depth_tensor = torch.from_numpy(depth)
         try:
             annotation_new = []
-            # 對於 annotation 中的每個 (480, 640) 區域
-            # print("the origin num of mask is : ", annotation.shape[0])
-            # annotation.shape[0] 為 總共有n個辨識出來的mask
-            for i in range(annotation.shape[0]): 
+            # annotation.shape[0] 為 總共有n個辨識出來的mask (print("the origin num of mask is : ", annotation.shape[0]))
 
-                ################## 法一: 利用去極值的中位數####################### 
-                ### 創建對應的 mask
-                # annotation[i] 為i個mask(以0和1表示, 1代表有)
+            # annotation 的 shape為(mask_num * 480 * 640), 以下為對於 annotation 中的每個 (480, 640) 區域
+            for i in range(annotation.shape[0]): 
+                #annotation[i] 為第i個mask(以0和1表示, 1代表有)
                 mask = annotation[i] == 1
 
                 # 選擇對應 mask 的 depth 值
@@ -374,31 +367,28 @@ class FastSAMPrompt:
                     continue
 
                 median_value = torch.median(selected_depth)
-                # 如果 depth 中有大於 350 的值，則不將對應區域存入 annotation_new
+                # 如果 depth 中有小於350(可調)的值，則將該區域存入 annotation_new
                 if median_value < 350:
                     annotation_new.append(annotation[i])
                 
-
             # 將 annotation_new 轉換為 torch 張量
             annotation_new = torch.stack(annotation_new)
-
             annotation = annotation_new
         except:
             print("first filter err")
             
-       ################ 再利用depth mask 的比例來二次 篩選 mask ##################
-        ### 這邊的depth_mask為Inference_d435.py中的depth_useless_mask(用不到的為true, 用得到的(包含破碎的夾爪以及物品)為false)
-        ### depth_mask type 為<class 'numpy.ndarray'>, shape 為 480*640
+        ###### 再利用depth mask 的比例來二次 篩選 mask ######
+        # depth_useless_mask type 為<class 'numpy.ndarray'>, shape 為 480*640, 直接根據深度取的mask, 用不到的為true, 用得到的(包含破碎的夾爪以及物品)為false)
         try:
             annotation_new = []
             for i in range(annotation.shape[0]):
-                # 創建對應的 mask
+                #annotation[i] 為第i個mask(以0和1表示, 1代表有)
                 mask = annotation[i] == 1
 
-                # 轉換 depth_mask 為 PyTorch 張量
-                depth_mask_tensor = torch.tensor(depth_mask, device='cuda')
+                # 轉換 depth_useless_mask 為 PyTorch 張量
+                depth_mask_tensor = torch.tensor(depth_useless_mask, device='cuda')
 
-                # 計算 depth_mask 中對應的位置為 False 的比例
+                # 計算 depth_useless_mask 中對應的位置為 False 的比例
                 false_ratio = torch.sum(~depth_mask_tensor[mask.cpu()]).item() / torch.sum(mask.cpu()).item()
 
                 # 如果比例大於n%，則將對應區域存入 annotation_new (這邊可能要再做調整, 目前0.5可以把夾爪考慮進去)
@@ -412,50 +402,36 @@ class FastSAMPrompt:
             annotation = annotation_new
         except:
             print("no depth filter")
-
         ######################################################################################
 
-        # annotation 的 shape為(mask_num * 480 * 640)
-        msak_sum = annotation.shape[0]
+        mask_sum = annotation.shape[0]
         # 自己+的(看有幾個最終的mask, 這邊包含透過文字prompt, box_prompt, 點點prompt 與 seg every thing(所有mask))
-        print("after depth filter msak_sum:", msak_sum)
-
-
-
+        print("mask_sum after twitce filter in prompt :", mask_sum)
         height = annotation.shape[1]
         weight = annotation.shape[2]
         areas = torch.sum(annotation, dim=(1, 2))
         sorted_indices = torch.argsort(areas, descending=False)
         annotation = annotation[sorted_indices]
 
-
-        # Find the index of the first non-zero value at each position.
-        # 找到每個位置上第一個非零值的索引
-        # index.shape is torch.Size([480, 640])
+        ### 主要mask上色 ###
+        # 找到每個位置上第一個非零值的索引, 用於上色, index.shape is torch.Size([480, 640])
         index = (annotation != 0).to(torch.long).argmax(dim=0)
-
-
-
         if random_color:
-            color = torch.rand((msak_sum, 1, 1, 3)).to(annotation.device)
+            color = torch.rand((mask_sum, 1, 1, 3)).to(annotation.device)
         else:
-            color = torch.ones((msak_sum, 1, 1, 3)).to(annotation.device) * torch.tensor([
+            color = torch.ones((mask_sum, 1, 1, 3)).to(annotation.device) * torch.tensor([
                 30 / 255, 144 / 255, 255 / 255]).to(annotation.device)
 
-
         # 用來上透明顏色(shape 為 mask*1*1*1)
-        transparency = torch.ones((msak_sum, 1, 1, 1)).to(annotation.device) * 0.6
+        transparency = torch.ones((mask_sum, 1, 1, 1)).to(annotation.device) * 0.6
 
-        # 將顏色和透明度合併成一個形狀為 (msak_sum, 1, 1, 4) 的張量，即每個遮罩的顏色和透明度信息
+        # 將顏色和透明度合併成一個形狀為 (mask_sum, 1, 1, 4) 的張量，即每個遮罩的顏色和透明度信息
         visual = torch.cat([color, transparency], dim=-1)
         
-        # 將每個遮罩乘以其對應的顏色和透明度信息，得到最終的顏色遮罩圖像
-        # mask_image.shape 為 torch.Size([mask_num, 480, 640, 4])
+        # 將每個遮罩乘以其對應的顏色和透明度信息，得到最終的顏色遮罩圖像, mask_image.shape 為 torch.Size([mask_num, 480, 640, 4])
         mask_image = torch.unsqueeze(annotation, -1) * visual
 
-
-
-        ### Select data according to the index. The index indicates which batch's data to choose at each position, converting the mask_image into a single batch form.
+        # Select data according to the index. The index indicates which batch's data to choose at each position, converting the mask_image into a single batch form.
         # 創建一個形狀為 (height, weight, 4) 的全零張量，用於顯示最終的合成圖像
         show = torch.zeros((height, weight, 4)).to(annotation.device)
         # 創建網格索引 h_indices 和 w_indices，用於後續的索引操作
@@ -468,8 +444,8 @@ class FastSAMPrompt:
         # Use vectorized indexing to update the values of 'show'.
         show[h_indices, w_indices, :] = mask_image[indices]
         ########################################################
-        
 
+        ### bboxes和point上色 ###
         show_cpu = show.cpu().numpy()
         if bboxes is not None:
             for bbox in bboxes:
@@ -495,6 +471,7 @@ class FastSAMPrompt:
             show_cpu = cv2.resize(show_cpu, (target_width, target_height), interpolation=cv2.INTER_NEAREST)
         ax.imshow(show_cpu)
         # 這邊+plt.show()一樣會顯示最終結果(但為bgr), 且不會影響結果
+        ########################################################
 
     # clip
     @torch.no_grad()
