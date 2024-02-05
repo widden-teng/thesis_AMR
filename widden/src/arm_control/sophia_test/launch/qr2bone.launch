@@ -1,0 +1,5 @@
+<launch>
+
+  <node pkg="sophia_test" type="find_target_qr2bone220705" name="find_target_qr2bone_node" output="screen"/>
+
+</launch>

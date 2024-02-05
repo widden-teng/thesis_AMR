@@ -1,0 +1,7 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/media/peter/94ad93e3-5bfb-44b1-acc4-92ee2c7f80cd/yu/Documents/surgery/devel/lib/python2.7/dist-packages",
+        "/home/peter/Music/MPCTEST/OCS_real/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
+}

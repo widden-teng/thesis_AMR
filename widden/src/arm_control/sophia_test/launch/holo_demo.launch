@@ -1,0 +1,23 @@
+<launch>
+  <include file="$(find tm_driver)/launch/tm5_900_bringup.launch"/>
+  
+  <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+  	<arg name="color_width" value="1280"/>
+  	<arg name="color_height" value="720"/>
+  	<arg name="color_fps" value="30"/>
+  	<arg name="enable_infra1" value="false"/>
+  	<arg name="enable_infra2" value="false"/>
+  </include>
+
+  <node pkg="sophia_test" type="self_camera_info.py" name="undistortion_node" />
+  <node ns="my_camera" pkg="image_proc" type="image_proc" name="image_proc_node" />
+  <include file="$(find apriltags_ros)/launch/tag_surgery.launch"/>
+  <node pkg="qr_detector" type="qrcode" name="qrcode_node" />
+
+  <!-- <include file="$(find sophia_test)/launch/tf_pub.launch"/> -->
+  <!-- <node pkg="tf" type="static_transform_publisher" name="ptr_tf_node" args="0 -0.112 -0.0535 0 0 0 1 /tag19 /ptr 100" /> -->
+  <!-- <node pkg="sophia_test" type="find_target_qr2bone" name="find_target_qr2bone_node" /> -->
+  <!-- <node pkg="sophia_test" type="tm_move2target_line" name="tm_move2target_line_node" /> -->
+  <!-- <node pkg="qr_detector" type="qr2AR" name="qr2AR_node" /> -->
+
+</launch>

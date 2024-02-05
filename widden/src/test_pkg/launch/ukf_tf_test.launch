@@ -1,0 +1,5 @@
+<launch>
+  <!-- <node pkg="tf" type="static_transform_publisher" name="world2test1" args="0.0 0.0 0.1 0.0 0.0 0.0 1.0 world test1  1000" /> -->
+  <node pkg="tf" type="static_transform_publisher" name="world2test_odom" args="0.0 0.0 0.1 0.0 0.0 0.0 1.0 world test_odom  30" />
+</launch>
+

@@ -1,0 +1,35 @@
+roscore
+roslaunch tm_driver tm5_900_bringup.launch 
+roslaunch realsense2_camera rs_rgbd.launch color_width:=1920 color_height:=1080 enable_infra1:=false enable_infra2:=false
+roslaunch apriltags_ros tag_surgery.launch 
+roslaunch sophia_test tf_pub.launch 
+rosrun sophia_test find_target_bone0524 
+rosrun sophia_test tm_move2target_line 
+rosrun sophia_test target_pub_test
+rosrun tf static_transform_publisher 0 -0.111 -0.053 0 0 0 1 /tag19 /pointABC 30
+rosrun tf static_transform_publisher 0.2416 -0.03 0.0 0 0 0.7071068 0.7071068 /tag1 /bone_origin 100
+
+
+roslaunch robot_control robot_visualization.launch 
+roslaunch robot_control robot_Targetexe_data.launch 
+roslaunch rosbridge_server rosbridge_websocket.launch 
+
+
+//open gripper
+new
+sudo chmod 777 /dev/ttyUSB2
+rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB2
+//new terminal
+picking
+rosrun tm_reflexxes2 tm_demo_picking_blue_plate
+start
+gopen0/gopen/gclose
+
+
+/home/yu/Documents/surgery/3rdparty/rosbridge_connector
+cd Documents/surgery/3rdparty/rosbridge_connector/
+roslaunch rosbridge_server rosbridge_websocket_uwp.launch
+
+rosrun tf static_transform_publisher -0.0889 0.0059 -0.0604   0.0068   -0.0075   -0.7028 0.7114 /qr /cad 30
+rosrun qr_detector qrcode
+rosrun sophia_test find_target_qr2bone

@@ -1,0 +1,10 @@
+<launch>
+  <node pkg="sophia_test" type="tag_tf_hole" name="tag_tf_hole_node" output="screen"/>
+  <!--node pkg="sophia_test" type="tag_tf_test" name="tag_tf_test_node" output="screen"/-->
+  <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_node" output="screen" args="0 0 0.27 1 0 0 0 /hole /tt 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_node2" output="screen" args="-0.0889 0.0059 -0.0604   0.0068   -0.0075   -0.7028 0.7114 /qr /cad 30"/>
+
+  <!--node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_node3" output="screen" args="-0.16403 0.50866 0.00613 0.0017062 0.0052401 -0.70683 0.70736 /tag0 /base  30"/-->
+  <node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_node3" output="screen" args="-0.16417 0.51781 0.00048151 0.0018278 0.0061087 -0.70714 0.70704 /tag0 /base  30"/>
+
+</launch>

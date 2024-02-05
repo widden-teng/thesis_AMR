@@ -1,0 +1,5 @@
+<launch>
+
+  <node pkg="qr_detector" type="qr2AR_221102" name="qr2AR_221102_node" output="screen"/>
+
+</launch>

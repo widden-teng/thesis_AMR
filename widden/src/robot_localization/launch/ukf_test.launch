@@ -1,0 +1,12 @@
+<launch>
+<!-- ukf_localization_node_test is for widden testing -->
+  <node pkg="robot_localization" type="ukf_localization_node_test" name="ukf_se" clear_params="true" output="screen">
+    <rosparam command="load" file="$(find robot_localization)/params/ukf_test.yaml" />
+
+    <!--  Placeholder for output topic remapping
+    <remap from="odometry/filtered" to=""/>
+    <remap from="accel/filtered" to=""/>
+    -->
+
+  </node>
+</launch>
